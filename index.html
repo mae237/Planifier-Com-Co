@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificateur de Formations Multi-Modalités</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .icon-sm {
+            width: 16px;
+            height: 16px;
+        }
+        .icon-xs {
+            width: 12px;
+            height: 12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-6xl mx-auto p-6 bg-white">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+                📅 Planificateur de formations multi-modalités
+            </h1>
+            <p class="text-gray-600">Gérez vos formations en présentiel, distanciel et mix learning</p>
+        </div>
+
+        <!-- Configuration -->
+        <div class="bg-blue-50 rounded-lg p-6 mb-6 border border-blue-200">
+            <h2 class="text-xl font-semibold text-blue-800 mb-4 flex items-center gap-2">
+                ⚙️ Configuration initiale
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mode de planification</label>
+                    <select id="modeSelect" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="backward">🔄 Mode à rebours (recommandé 2026)</option>
+                        <option value="forward">➡️ Mode chronologique</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <span id="dateLabel">Date de fin de référence</span>
+                    </label>
+                    <input type="date" id="referenceDate" value="2026-07-03" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Ajout de période -->
+        <div class="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                ➕ Ajouter une période de formation
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom de la formation</label>
+                        <input type="text" id="periodName" placeholder="ex: Formation React avancé" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <select id="periodType" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="Formation">📚 Formation</option>
+                            <option value="Stage">🏢 Stage</option>
+                            <option value="Vacances">🏖️ Vacances</option>
+                            <option value="Examen">📝 Examen</option>
+                            <option value="Projet">🚀 Projet</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Modalité</label>
+                        <select id="periodModalite" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="présentiel">Présentiel</option>
+                            <option value="distanciel">Distanciel</option>
+                            <option value="mix learning">Mix Learning</option>
+                        </select>
+                        <p id="modaliteDescription" class="text-xs text-gray-500 mt-1">Formation en salle avec formateur</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Durée (semaines)</label>
+                        <input type="number" id="periodDuration" min="1" max="52" placeholder="ex: 3" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div class="flex items-end">
+                        <button id="addPeriodBtn" class="w-full px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                            ➕ Ajouter
+                        </button>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+        <!-- Liste des périodes -->
+        <div id="periodsSection" class="bg-white rounded-lg border border-gray-200 mb-6 hidden">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    🕐 Périodes définies (<span id="periodsCount">0</span>)
+                </h2>
+            </div>
+            <div id="periodsList" class="p-4 space-y-3"></div>
+        </div>
+
+        <!-- Timeline calculée -->
+        <div id="timelineSection" class="bg-white rounded-lg border border-gray-200 mb-6 hidden">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    📅 Planning généré automatiquement
+                </h2>
+            </div>
+            <div id="timelineList" class="p-4 space-y-4"></div>
+        </div>
+
+        <!-- Statistiques -->
+        <div id="statsSection" class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-gray-200 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                📊 Statistiques du planning
+            </h2>
+            <div id="statsContent" class="grid md:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- Message vide -->
+        <div id="emptyMessage" class="text-center py-12 text-gray-500">
+            <div class="text-5xl mb-4 opacity-50">📅</div>
+            <h3 class="text-lg font-medium mb-2">Aucune période définie</h3>
+            <p>Commencez par ajouter vos premières périodes de formation avec leurs modalités</p>
+        </div>
+    </div>
+
+    <script>
+        // État de l'application
+        let appState = {
+            mode: 'backward',
+            referenceDate: '2026-07-03',
+            periods: [],
+            colorCache: {}
+        };
+
+        // Configuration des types et modalités
+        const periodTypes = {
+            'Formation': { color: 'bg-blue-100 border-blue-300 text-blue-800', icon: '📚' },
+            'Stage': { color: 'bg-green-100 border-green-300 text-green-800', icon: '🏢' },
+            'Vacances': { color: 'bg-yellow-100 border-yellow-300 text-yellow-800', icon: '🏖️' },
+            'Examen': { color: 'bg-red-100 border-red-300 text-red-800', icon: '📝' },
+            'Projet': { color: 'bg-purple-100 border-purple-300 text-purple-800', icon: '🚀' }
+        };
+
+        const modaliteTypes = {
+            'présentiel': { 
+                color: 'bg-orange-100 border-orange-400 text-orange-800', 
+                icon: '📍', 
+                label: 'Présentiel',
+                description: 'Formation en salle avec formateur'
+            },
+            'distanciel': { 
+                color: 'bg-cyan-100 border-cyan-400 text-cyan-800', 
+                icon: '💻', 
+                label: 'Distanciel',
+                description: 'Formation 100% en ligne'
+            },
+            'mix learning': { 
+                color: 'bg-violet-100 border-violet-400 text-violet-800', 
+                icon: '📖', 
+                label: 'Mix Learning',
+                description: 'Formation mixte (présentiel + distanciel)'
+            }
+        };
+
+        // Fonction pour générer une couleur basée sur l'intitulé
+        function getColorForName(name) {
+            const colors = [
+                'bg-blue-100 border-blue-300 text-blue-800',
+                'bg-green-100 border-green-300 text-green-800',
+                'bg-purple-100 border-purple-300 text-purple-800',
+                'bg-red-100 border-red-300 text-red-800',
+                'bg-yellow-100 border-yellow-300 text-yellow-800',
+                'bg-indigo-100 border-indigo-300 text-indigo-800',
+                'bg-pink-100 border-pink-300 text-pink-800',
+                'bg-orange-100 border-orange-300 text-orange-800',
+                'bg-teal-100 border-teal-300 text-teal-800',
+                'bg-cyan-100 border-cyan-300 text-cyan-800'
+            ];
+            
+            const cleanName = name.toLowerCase().trim();
+            let hash = 0;
+            for (let i = 0; i < cleanName.length; i++) {
+                const char = cleanName.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function getColorWithCache(name) {
+            const cleanName = name.toLowerCase().trim();
+            if (!appState.colorCache[cleanName]) {
+                appState.colorCache[cleanName] = getColorForName(name);
+            }
+            return appState.colorCache[cleanName];
+        }
+
+        // Fonctions utilitaires pour les dates
+        function getMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function getFriday(mondayDate) {
+            const friday = new Date(mondayDate);
+            friday.setDate(friday.getDate() + 4);
+            return friday;
+        }
+
+        function addWeeks(date, weeks) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + (weeks * 7));
+            return result;
+        }
+
+        function formatDate(date) {
+            const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+            
+            return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        // Calcul des dates
+        function calculateDates() {
+            if (appState.periods.length === 0) return [];
+            
+            const results = [];
+            
+            if (appState.mode === 'backward') {
+                let currentEndDate = new Date(appState.referenceDate);
+                
+                while (currentEndDate.getDay() !== 5) {
+                    currentEndDate.setDate(currentEndDate.getDate() - 1);
+                }
+                
+                for (let i = appState.periods.length - 1; i >= 0; i--) {
+                    const period = appState.periods[i];
+                    const endDate = new Date(currentEndDate);
+                    
+                    const startDate = new Date(endDate);
+                    startDate.setDate(startDate.getDate() - (period.duration - 1) * 7 - 4);
+                    
+                    results.unshift({
+                        ...period,
+                        startDate,
+                        endDate,
+                        color: getColorWithCache(period.name)
+                    });
+                    
+                    currentEndDate = new Date(startDate);
+                    currentEndDate.setDate(currentEndDate.getDate() - 3);
+                }
+            } else {
+                let currentStartDate = getMonday(new Date(appState.referenceDate));
+                
+                for (const period of appState.periods) {
+                    const startDate = new Date(currentStartDate);
+                    const endDate = getFriday(addWeeks(startDate, period.duration - 1));
+                    
+                    results.push({
+                        ...period,
+                        startDate,
+                        endDate,
+                        color: getColorWithCache(period.name)
+                    });
+                    
+                    currentStartDate = addWeeks(endDate, 1);
+                    currentStartDate = getMonday(currentStartDate);
+                }
+            }
+            
+            return results;
+        }
+
+        // Mise à jour de l'affichage
+        function updateDisplay() {
+            const hasPeriodsGas = appState.periods.length > 0;
+            
+            document.getElementById('emptyMessage').style.display = hasPeriodsGas ? 'none' : 'block';
+            document.getElementById('periodsSection').style.display = hasPeriodsGas ? 'block' : 'none';
+            document.getElementById('timelineSection').style.display = hasPeriodsGas ? 'block' : 'none';
+            document.getElementById('statsSection').style.display = hasPeriodsGas ? 'block' : 'none';
+            
+            if (hasPeriodsGas) {
+                updatePeriodsList();
+                updateTimeline();
+                updateStats();
+            }
+        }
+
+        function updatePeriodsList() {
+            const periodsList = document.getElementById('periodsList');
+            const periodsCount = document.getElementById('periodsCount');
+            
+            periodsCount.textContent = appState.periods.length;
+            
+            periodsList.innerHTML = appState.periods.map((period, index) => `
+                <div class="p-4 rounded-lg border-2 ${getColorWithCache(period.name)}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-start gap-3 flex-1">
+                            <span class="text-2xl">${periodTypes[period.type].icon}</span>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="font-semibold">${period.name}</h3>
+                                    <div class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${modaliteTypes[period.modalite].color}">
+                                        ${modaliteTypes[period.modalite].icon}
+                                        ${modaliteTypes[period.modalite].label}
+                                    </div>
+                                </div>
+                                <p class="text-sm opacity-75 mb-2">
+                                    ${period.type} • ${period.duration} semaine${period.duration > 1 ? 's' : ''}
+                                </p>
+                                
+                                ${((period.modalite === 'distanciel' || period.modalite === 'mix learning') && period.plateforme) ? `
+                                <div class="text-xs">
+                                    <div class="flex items-center gap-1">
+                                        💻 <span>Plateforme: ${period.plateforme}</span>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <button onclick="deletePeriod(${period.id})" class="p-2 text-red-600 hover:bg-red-100 rounded-md transition-colors">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTimeline() {
+            const timelineList = document.getElementById('timelineList');
+            const calculatedPeriods = calculateDates();
+            
+            timelineList.innerHTML = calculatedPeriods.map((period, index) => `
+                <div class="p-6 rounded-lg border-2 ${period.color}">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">${periodTypes[period.type].icon}</span>
+                            <div>
+                                <h3 class="text-lg font-semibold">${period.name}</h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="px-2 py-1 text-xs font-medium bg-white bg-opacity-50 rounded-full">
+                                        ${period.type}
+                                    </span>
+                                    <div class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${modaliteTypes[period.modalite].color}">
+                                        ${modaliteTypes[period.modalite].icon}
+                                        ${modaliteTypes[period.modalite].label}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-sm font-medium bg-white bg-opacity-50 px-3 py-1 rounded-full">
+                            ${period.duration} semaine${period.duration > 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4 text-sm mb-3">
+                        <div class="bg-white bg-opacity-30 p-3 rounded border-2 border-blue-400">
+                            <span class="font-medium">🗓️ Début (Lundi) : </span>
+                            <span class="font-bold text-blue-800">${formatDate(period.startDate)}</span>
+                        </div>
+                        <div class="bg-white bg-opacity-30 p-3 rounded border-2 border-blue-400">
+                            <span class="font-medium">🏁 Fin (Vendredi) : </span>
+                            <span class="font-bold text-blue-800">${formatDate(period.endDate)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            const statsByName = {};
+            const statsByType = {};
+            const statsByModalite = {};
+            let totalWeeks = 0;
+            
+            appState.periods.forEach(period => {
+                statsByName[period.name] = (statsByName[period.name] || 0) + period.duration;
+                statsByType[period.type] = (statsByType[period.type] || 0) + period.duration;
+                statsByModalite[period.modalite] = (statsByModalite[period.modalite] || 0) + period.duration;
+                totalWeeks += period.duration;
+            });
+
+            const statsContent = document.getElementById('statsContent');
+            
+            statsContent.innerHTML = `
+                <div>
+                    <h3 class="font-medium text-gray-700 mb-3">Répartition par formation</h3>
+                    <div class="space-y-2">
+                        ${Object.entries(statsByName).map(([name, weeks]) => `
+                            <div class="flex justify-between items-center p-3 rounded border-2 ${getColorWithCache(name)}">
+                                <span class="font-medium text-sm">${name}</span>
+                                <span class="font-bold text-lg">${weeks} sem.</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-700 mb-3">Répartition par type</h3>
+                    <div class="space-y-2">
+                        ${Object.entries(statsByType).map(([type, weeks]) => `
+                            <div class="flex justify-between items-center p-2 bg-white bg-opacity-50 rounded">
+                                <span class="flex items-center gap-2">
+                                    <span>${periodTypes[type].icon}</span>
+                                    <span>${type}</span>
+                                </span>
+                                <span class="font-semibold">${weeks} sem.</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-medium text-gray-700 mb-3">Résumé global</h3>
+                    <div class="bg-white bg-opacity-50 p-4 rounded-lg text-center">
+                        <div class="text-3xl font-bold text-blue-600 mb-1">${totalWeeks}</div>
+                        <div class="text-sm text-gray-600">semaines au total</div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            ≈ ${Math.round(totalWeeks * 7 / 30.44)} mois
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>Formations:</span>
+                            <span class="font-medium">${Object.keys(statsByName).length}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Modalités:</span>
+                            <span class="font-medium">${Object.keys(statsByModalite).length}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Fonctions d'action
+        function addPeriod() {
+            const name = document.getElementById('periodName').value.trim();
+            const type = document.getElementById('periodType').value;
+            const modalite = document.getElementById('periodModalite').value;
+            const duration = parseInt(document.getElementById('periodDuration').value);
+
+            if (name && duration && duration > 0) {
+                appState.periods.push({
+                    id: Date.now(),
+                    name,
+                    type,
+                    modalite,
+                    duration
+                });
+
+                // Reset form
+                document.getElementById('periodName').value = '';
+                document.getElementById('periodType').value = 'Formation';
+                document.getElementById('periodModalite').value = 'présentiel';
+                document.getElementById('periodDuration').value = '';
+                updateModaliteDescription();
+
+                updateDisplay();
+            }
+        }
+
+        function deletePeriod(id) {
+            appState.periods = appState.periods.filter(p => p.id !== id);
+            updateDisplay();
+        }
+
+        function updateModaliteDescription() {
+            const modalite = document.getElementById('periodModalite').value;
+            document.getElementById('modaliteDescription').textContent = modaliteTypes[modalite].description;
+        }
+
+        function updateDateLabel() {
+            const mode = document.getElementById('modeSelect').value;
+            const label = mode === 'backward' ? 'Date de fin de référence' : 'Date de début de référence';
+            document.getElementById('dateLabel').textContent = label;
+        }
+
+        // Event listeners
+        document.getElementById('modeSelect').addEventListener('change', function() {
+            appState.mode = this.value;
+            updateDateLabel();
+            updateDisplay();
+        });
+
+        document.getElementById('referenceDate').addEventListener('change', function() {
+            appState.referenceDate = this.value;
+            updateDisplay();
+        });
+
+        document.getElementById('periodModalite').addEventListener('change', function() {
+            updateModaliteDescription();
+        });
+
+        document.getElementById('addPeriodBtn').addEventListener('click', addPeriod);
+
+        // Permettre d'ajouter avec Entrée
+        document.getElementById('periodDuration').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addPeriod();
+            }
+        });
+
+        // Initialisation
+        updateModaliteDescription();
+        updateDateLabel();
+        updateDisplay();
+    </script>
+</body>
+</html>
